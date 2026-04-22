@@ -1,0 +1,192 @@
+{% extends "dashboard/base_admin.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="grid lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">Registrations per Event</h3>
+            <div class="relative h-80">
+                <canvas id="eventBarChart" class="w-full h-full"></canvas>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">Registrations per Department</h3>
+            <div class="relative h-80">
+                <canvas id="deptPieChart" class="w-full h-full"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-gray-900">Events Summary</h3></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wider">
+                        <tr><th class="px-5 py-3 text-left">Event</th><th class="px-5 py-3 text-center">Registrations</th><th class="px-5 py-3 text-center">Status</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for event in events %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-5 py-3 font-medium text-gray-900">{{ event.title|truncatewords:4 }}</td>
+                            <td class="px-5 py-3 text-center"><span class="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-lg text-sm font-bold">{{ event.reg_count }}</span></td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full
+                                    {% if event.status == 'upcoming' %}bg-blue-100 text-blue-700
+                                    {% elif event.status == 'ongoing' %}bg-cyan-100 text-cyan-700
+                                    {% else %}bg-red-100 text-red-700{% endif %}">{{ event.get_status_display }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-gray-900">Department Breakdown</h3></div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wider">
+                        <tr><th class="px-5 py-3 text-left">Department</th><th class="px-5 py-3 text-center">Registrations</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for dept in dept_stats %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-5 py-3 font-medium text-gray-900">{{ dept.code }} - {{ dept.name }}</td>
+                            <td class="px-5 py-3 text-center"><span class="inline-flex items-center justify-center w-8 h-8 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-bold">{{ dept.reg_count }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const res = await fetch('{% url "dashboard:analytics_data" %}');
+    const data = await res.json();
+    const eventPalette = [
+        { base: '#2563eb', hover: '#1d4ed8' },
+        { base: '#f97316', hover: '#ea580c' },
+        { base: '#0891b2', hover: '#0e7490' },
+        { base: '#059669', hover: '#047857' },
+        { base: '#7c3aed', hover: '#6d28d9' },
+        { base: '#dc2626', hover: '#b91c1c' },
+        { base: '#db2777', hover: '#be185d' },
+        { base: '#4f46e5', hover: '#4338ca' },
+        { base: '#0d9488', hover: '#0f766e' },
+        { base: '#ca8a04', hover: '#a16207' },
+    ];
+    const eventBarColors = data.event_labels.map((_, index) => eventPalette[index % eventPalette.length].base);
+    const eventBarHoverColors = data.event_labels.map((_, index) => eventPalette[index % eventPalette.length].hover);
+
+    const deptColorMap = {
+        COE: { base: '#2563eb', hover: '#1d4ed8' },
+        COENG: { base: '#f97316', hover: '#ea580c' },
+        CIT: { base: '#7c3aed', hover: '#6d28d9' },
+        COS: { base: '#059669', hover: '#047857' },
+        DEFAULT: [
+            { base: '#0891b2', hover: '#0e7490' },
+            { base: '#dc2626', hover: '#b91c1c' },
+            { base: '#db2777', hover: '#be185d' },
+            { base: '#4f46e5', hover: '#4338ca' },
+            { base: '#0d9488', hover: '#0f766e' },
+            { base: '#ca8a04', hover: '#a16207' },
+            { base: '#9333ea', hover: '#7e22ce' },
+            { base: '#e11d48', hover: '#be123c' },
+        ],
+    };
+
+    const resolveDeptColor = (label, index) => deptColorMap[label] || deptColorMap.DEFAULT[index % deptColorMap.DEFAULT.length];
+
+    new Chart(document.getElementById('eventBarChart'), {
+        type: 'bar',
+        data: {
+            labels: data.event_labels,
+            datasets: [{
+                label: 'Registrations',
+                data: data.event_data,
+                backgroundColor: eventBarColors,
+                hoverBackgroundColor: eventBarHoverColors,
+                borderRadius: 8,
+                borderSkipped: false,
+                categoryPercentage: 0.68,
+                barPercentage: 0.82,
+                maxBarThickness: 72,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0, stepSize: 1 },
+                },
+            }
+        }
+    });
+
+    const sliceColors = data.dept_labels.map((label, index) => resolveDeptColor(label, index).base);
+    const sliceHoverColors = data.dept_labels.map((label, index) => resolveDeptColor(label, index).hover);
+
+    new Chart(document.getElementById('deptPieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: data.dept_labels,
+            datasets: [{
+                data: data.dept_data,
+                backgroundColor: sliceColors,
+                hoverBackgroundColor: sliceHoverColors,
+                borderWidth: 2,
+                borderColor: '#fff',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 16,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: { size: 12 },
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total > 0 ? ((ctx.raw / total) * 100).toFixed(1) : 0;
+                            return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

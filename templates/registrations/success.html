@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Registration Successful{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center fade-in">
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <!-- Success Icon -->
+        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Registration Successful!</h1>
+        <p class="text-gray-500 mb-6">You are now registered for <span class="font-semibold text-blue-700">{{ registration.event.title }}</span>.</p>
+
+        <!-- Registration Details -->
+        <div class="bg-gray-50 rounded-xl p-5 text-left mb-6 space-y-2 text-sm">
+            <div class="flex justify-between">
+                <span class="text-gray-500">Name</span>
+                <span class="font-medium text-gray-800">{{ registration.full_name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Department</span>
+                <span class="font-medium text-gray-800">{{ registration.department.code }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Year & Section</span>
+                <span class="font-medium text-gray-800">{{ registration.year_level }} - {{ registration.section }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Event Date</span>
+                <span class="font-medium text-gray-800">{{ registration.event.date|date:"F d, Y" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Registration Code</span>
+                <span class="font-mono font-medium text-blue-700 text-xs">{{ registration.registration_code }}</span>
+            </div>
+        </div>
+
+        <!-- Registration Code Highlight -->
+        <div class="mb-6">
+            <p class="text-sm text-gray-500 mb-3 font-medium">Your Registration Code (for attendance check-in)</p>
+            <div class="inline-block bg-blue-50 border-2 border-blue-200 rounded-xl px-6 py-4 shadow-sm">
+                <p class="font-mono text-lg font-bold text-blue-700 tracking-wide select-all">{{ registration.registration_code }}</p>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">Save or screenshot this code. Present it during check-in.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <a href="{% url 'events:event_list' %}" class="flex-1 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium transition">
+                Browse More Events
+            </a>
+            <a href="{% url 'events:home' %}" class="flex-1 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-medium transition">
+                Go Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
